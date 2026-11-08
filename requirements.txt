@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+psycopg2-binary
+pypdf
+scikit-learn
+rank_bm25
+numpy
+langchain-text-splitters
+langchain-groq
+psutil
