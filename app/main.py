@@ -36,7 +36,10 @@ def warm_up():
     try:
         get_retriever()
         memory_mb = psutil.Process().memory_info().rss / (1024 * 1024)
-        print(f"[startup] index ready in {time.time() - start:.0f}s, memory {memory_mb:.0f} MB", flush=True)
+        print(
+            f"[startup] index ready in {time.time() - start:.0f}s, memory {memory_mb:.0f} MB",
+            flush=True,
+        )
     except ValueError:
         print("[startup] no documents yet", flush=True)
     except Exception as error:
@@ -55,7 +58,7 @@ app = FastAPI(title="SmartRAG", lifespan=lifespan)
 
 class QueryRequest(BaseModel):
     question: str
-    k: int = 4
+    k: int = 3
 
 
 @app.get("/")
@@ -119,6 +122,7 @@ def upload_pdf(file: UploadFile = File(...), x_admin_key: str = Header(default="
 
     return {"filename": file.filename, "new_chunks": new_chunks}
 
+
 @app.post("/query")
 def query(request: QueryRequest):
     # simple daily limit so strangers cannot use up the Groq quota
@@ -148,7 +152,10 @@ def query(request: QueryRequest):
         answer = answer_question(request.question, top_chunks)
     except Exception as error:
         print("[query] model call failed:", repr(error)[:300], flush=True)
-        raise HTTPException(status_code=503, detail="The language model call failed or was rate limited")
+        raise HTTPException(
+            status_code=503,
+            detail="The language model call failed or was rate limited",
+        )
     after_model = time.time()
 
     sources = []

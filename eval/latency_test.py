@@ -4,7 +4,7 @@ import time
 import requests
 
 URL = "https://smartrag-8k6m.onrender.com"
-PAUSE = 1   # seconds between requests
+PAUSE = 12   # seconds between requests (keeps us under the free Groq token limit)
 
 with open("eval/queries_clean.json", encoding="utf-8") as f:
     questions = [q["question"] for q in json.load(f)][:20]
@@ -12,14 +12,19 @@ with open("eval/queries_clean.json", encoding="utf-8") as f:
 # warm-up request, not counted
 requests.post(
     f"{URL}/query",
-    json={"question": "What is multi-head attention?", "k": 4},
+    json={"question": "What is multi-head attention?", "k": 3},
     timeout=120,
 )
+time.sleep(PAUSE)
 
 times = []
 for question in questions:
     start = time.time()
-    response = requests.post(f"{URL}/query", json={"question": question, "k": 4}, timeout=120)
+    response = requests.post(
+        f"{URL}/query",
+        json={"question": question, "k": 3},
+        timeout=120,
+    )
     seconds = time.time() - start
     if response.status_code == 200:
         data = response.json()
