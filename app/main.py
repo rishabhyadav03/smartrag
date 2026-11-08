@@ -119,7 +119,6 @@ def upload_pdf(file: UploadFile = File(...), x_admin_key: str = Header(default="
 
     return {"filename": file.filename, "new_chunks": new_chunks}
 
-
 @app.post("/query")
 def query(request: QueryRequest):
     # simple daily limit so strangers cannot use up the Groq quota
@@ -143,7 +142,14 @@ def query(request: QueryRequest):
         raise HTTPException(status_code=400, detail="No documents yet. Upload a PDF first.")
 
     top_chunks = search.search(request.question, mode="hybrid", k=k)
-    answer = answer_question(request.question, top_chunks)
+    after_search = time.time()
+
+    try:
+        answer = answer_question(request.question, top_chunks)
+    except Exception as error:
+        print("[query] model call failed:", repr(error)[:300], flush=True)
+        raise HTTPException(status_code=503, detail="The language model call failed or was rate limited")
+    after_model = time.time()
 
     sources = []
     for chunk, score in top_chunks:
@@ -158,5 +164,8 @@ def query(request: QueryRequest):
     return {
         "answer": answer,
         "sources": sources,
-        "seconds": round(time.time() - start, 2),
+        "seconds": round(after_model - start, 2),
+        "search_seconds": round(after_search - start, 2),
+        "llm_seconds": round(after_model - after_search, 2),
+        "answer_chars": len(answer),
     }
