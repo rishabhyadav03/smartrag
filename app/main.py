@@ -31,10 +31,16 @@ def get_retriever():
 
 
 def warm_up():
+    start = time.time()
+    print("[startup] index build started", flush=True)
     try:
         get_retriever()
+        memory_mb = psutil.Process().memory_info().rss / (1024 * 1024)
+        print(f"[startup] index ready in {time.time() - start:.0f}s, memory {memory_mb:.0f} MB", flush=True)
     except ValueError:
-        pass  # no documents yet
+        print("[startup] no documents yet", flush=True)
+    except Exception as error:
+        print("[startup] index build failed:", error, flush=True)
 
 
 @asynccontextmanager

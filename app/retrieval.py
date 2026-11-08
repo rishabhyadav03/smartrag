@@ -1,5 +1,6 @@
 import re
 import numpy as np
+import psutil
 from rank_bm25 import BM25Okapi
 from sklearn.feature_extraction.text import HashingVectorizer, TfidfTransformer
 from app.db import get_connection
@@ -33,6 +34,10 @@ def load_chunks():
         )
     return chunks
 
+def log(message):
+    memory_mb = psutil.Process().memory_info().rss / (1024 * 1024)
+    print(f"[index] {message} - memory {memory_mb:.0f} MB", flush=True)
+
 
 def tokenize(text):
     # lowercase and split into words
@@ -44,11 +49,13 @@ class Retriever:
         self.chunks = load_chunks()
         if len(self.chunks) == 0:
             raise ValueError("No chunks in database. Run: python -m app.ingest")
+        log("chunks loaded")
 
         texts = [c["text"] for c in self.chunks]
 
         # BM25 index
         self.bm25 = BM25Okapi([tokenize(t) for t in texts])
+        log("BM25 built")
 
         # TF-IDF index using hashing: no vocabulary dictionary is stored
         self.hasher = HashingVectorizer(
@@ -61,6 +68,7 @@ class Retriever:
         self.transformer = TfidfTransformer()
         counts = self.hasher.transform(texts)
         self.tfidf_matrix = self.transformer.fit_transform(counts)
+        log("TF-IDF built")
 
     def bm25_scores(self, query):
         # one score per chunk
